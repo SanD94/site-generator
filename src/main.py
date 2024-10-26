@@ -1,23 +1,14 @@
 from textnode import TextNode, TextType
-from htmlnode import HTMLNode
+from htmlnode import ParentNode, LeafNode
 
 def main():
-    text_node = TextNode("This is a text node", TextType.BOLD, "https://www.boot.dev")
-    print(text_node)
-    x = HTMLNode(None, None, None, {"a" : 15, "b" : 20})
-    y = HTMLNode(None, None, None, None)
-    z = HTMLNode(None, None, None, None)
-    k = HTMLNode(None, None, None, None)
-    x.children = []
-    y.children = []
-    z.children = []
-    z.children.append(k)
-    y.children.append(z)
-    x.children.append(y)
-    x.children.append(y)
-    print(z)
-    print(y)
-    print(x)
+    node = ParentNode("p", [
+            LeafNode("b", "Bold text"),
+            LeafNode(None, "Normal text"),
+            LeafNode("i", "italic text"),
+            LeafNode(None, "Normal text"),
+            ])
+    print(node)
     
 
   

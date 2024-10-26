@@ -11,29 +11,30 @@ class HTMLNode():
     def props_to_html(self):
         if self.props == None:
             return ""
-        return " "+" ".join(list(map(lambda val : f'{val[0]}="{val[1]}"', self.props.items())))
+        return " "+" ".join(map(lambda val : f'{val[0]}="{val[1]}"', self.props.items()))
 
-    def _print_children(self, depth):
+    def _print_children(self, depth, tab):
         if self.children == None:
             return "None"
         if depth == 6:
             return "REDACTED..."
-        n_whitespace = (depth - 1) * 4 * " "
+        n_tab = (depth - 1) * tab
         return "[\n" \
-            + ",\n".join(list(map(lambda child: child._repr(depth), self.children))) \
-            + "\n" + n_whitespace + "]"
+            + ",\n".join(map(lambda child: child._repr(depth), self.children)) \
+            + "\n" + n_tab + "]"
 
     def __repr__(self):
         return self._repr(0)
     
     def _repr(self, depth):
-        n_whitespace = depth * 4 * " "
-        return n_whitespace + "HTMLNode(\n" \
-            + n_whitespace + 4 * " " + f"tag: {self.tag}\n" \
-            + n_whitespace + 4 * " " + f"value: {self.value}\n" \
-            + n_whitespace + 4 * " " + f"children: {self._print_children(depth + 2)}\n" \
-            + n_whitespace + 4 * " " + f"props: {self.props_to_html()}\n" \
-            + n_whitespace + ")"
+        one_tab = 4 * " " # assumption with 4 spaces to print pretty
+        n_tab = depth * one_tab
+        return n_tab + f"{self.__class__.__name__}(\n" \
+            + n_tab + one_tab + f"tag: {self.tag}\n" \
+            + n_tab + one_tab + f"value: {self.value}\n" \
+            + n_tab + one_tab + f"children: {self._print_children(depth + 2, one_tab)}\n" \
+            + n_tab + one_tab + f"props: {self.props_to_html()}\n" \
+            + n_tab + ")"
     
 
 class LeafNode(HTMLNode):
@@ -46,3 +47,15 @@ class LeafNode(HTMLNode):
         if self.tag is None:
             return self.value
         return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
+    
+class ParentNode(HTMLNode):
+    def __init__(self, tag, children, props=None):
+        super().__init__(tag, None, children, props)
+
+    def to_html(self):
+        if self.tag is None:
+            raise ValueError("Invalid HTML: no tag")
+        if self.children is None:
+            raise ValueError("Invalid HTML: no children")
+        children_html =  "".join(map(lambda child: child.to_html(), self.children))
+        return f"<{self.tag}>{children_html}</{self.tag}>"
