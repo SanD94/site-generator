@@ -1,6 +1,10 @@
 import unittest
 
-from utils import split_nodes_delimiter
+from utils import (
+    split_nodes_delimiter, 
+    extract_markdown_images, 
+    extract_markdown_links
+)
 from textnode import TextNode, TextType
 
 # TODO: Add tests for Exceptions and wrong TextTypes
@@ -83,6 +87,32 @@ class TestSplitNodesDelimiter(unittest.TestCase):
             ],
             new_nodes,
         )
+
+class TestExtractMarkdown(unittest.TestCase):
+    def test_extract_markdown_images(self):
+        text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        exp_ans = [("rick roll", "https://i.imgur.com/aKaOqIh.gif"), ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg")]
+        act_ans = extract_markdown_images(text)
+        self.assertListEqual(act_ans, exp_ans)
+    
+    def test_extract_markdown_images_empty(self):
+        text = "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
+        exp_ans = []
+        act_ans = extract_markdown_images(text)
+        self.assertListEqual(act_ans, exp_ans)
+
+
+    def test_extract_markdown_link(self):
+        text = "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
+        exp_ans = [("to boot dev", "https://www.boot.dev"), ("to youtube", "https://www.youtube.com/@bootdotdev")]
+        act_ans = extract_markdown_links(text)
+        self.assertListEqual(act_ans, exp_ans)
+
+    def test_extract_markdown_link_empty(self):
+        text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        exp_ans = []
+        act_ans = extract_markdown_links(text)
+        self.assertListEqual(act_ans, exp_ans)
 
 
 

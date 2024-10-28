@@ -1,7 +1,8 @@
 from textnode import TextType, TextNode
 from functools import reduce
-from typing import Iterator
 from collections.abc import Callable
+import re
+
 
 
 # assuming delimiter and text type share the same meaning and there is no syntax error
@@ -32,3 +33,11 @@ def _create_text_node(text_type) -> Callable[[tuple[int, str]], TextNode]:
             return TextNode(text, text_type)
         return TextNode(text, TextType.TEXT)
     return wrapper
+
+
+def extract_markdown_images(text : str) -> list[tuple[str, str]]:
+    return re.findall(r"!\[(.*?)\]\((.*?)\)", text)
+
+
+def extract_markdown_links(text : str) -> list[tuple[str, str]]:
+    return re.findall(r"(?<!!)\[(.*?)\]\((.*?)\)", text)
