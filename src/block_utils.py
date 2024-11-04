@@ -1,5 +1,9 @@
 import re
 from functools import reduce
+from htmlnode import ParentNode, HTMLNode
+from enum import Enum
+from inline_utils import text_to_textnodes
+from textnode import text_node_to_html_node
 
 def markdown_to_blocks(markdown : str) -> list[str]:
     blocks = list(filter(
@@ -11,12 +15,14 @@ def markdown_to_blocks(markdown : str) -> list[str]:
     ))
     return blocks
 
-block_type_paragraph = "paragraph"
-block_type_heading = "heading"
-block_type_code = "code"
-block_type_quote = "quote"
-block_type_olist = "ordered_list"
-block_type_ulist = "unordered_list"
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    OLIST = "ordered_list"
+    ULIST = "unordered_list"
+    NONE = "none"
 
 def _is_heading(block_markdown : str) -> bool:
     return re.match(r"^#{1,6} ", block_markdown)
@@ -53,18 +59,86 @@ def _is_olist(block_markdown : str, n_line : int) -> bool:
     ordered_list = list(map(int, ordered_list_str))
     return ordered_list == list(range(1, n_line + 1))
 
-def block_to_block_type(block_markdown : str) -> str:
+def block_to_block_type(block_markdown : str) -> BlockType:
     n_line = len(block_markdown.split("\n"))
 
     if _is_heading(block_markdown):
-        return block_type_heading
+        return BlockType.HEADING
     if _is_code(block_markdown):
-        return block_type_code
+        return BlockType.CODE
     if _is_quote(block_markdown, n_line):
-        return block_type_quote
+        return BlockType.QUOTE
     if _is_ulist(block_markdown, n_line):
-        return block_type_ulist
+        return BlockType.ULIST
     if _is_olist(block_markdown, n_line):
-        return block_type_olist
+        return BlockType.OLIST
     
-    return block_type_paragraph
+    return BlockType.PARAGRAPH
+
+def markdown_to_html_node(markdown : str) -> ParentNode:
+    blocks = markdown_to_blocks(markdown)
+    
+    children = []
+    for block in blocks:
+        html_node = _create_html_node(block)
+        children.append(html_node)
+    return ParentNode("div", children, )
+
+
+def _create_html_node(block : str) -> ParentNode:
+    block_type = block_to_block_type(block)
+    match block_type:
+        case BlockType.PARAGRAPH:
+            paragraph = " ".join(block.split("\n"))
+            text_nodes = text_to_textnodes(paragraph)
+            html_nodes = list(map(text_node_to_html_node, text_nodes))
+            return ParentNode("p", html_nodes)
+
+        case BlockType.HEADING:
+            ### assuming there is only one heading
+            header, block = re.findall(r"^(#{1,6}) (.*)", block)[0]
+            header_len = len(header)
+            text_nodes = text_to_textnodes(block)
+            html_nodes = list(map(text_node_to_html_node, text_nodes))
+            return ParentNode(f"h{header_len}", html_nodes)
+            
+        case BlockType.CODE:
+            block = block[3:-3]
+            text_nodes = text_to_textnodes(block)
+            html_nodes = list(map(text_node_to_html_node, text_nodes))
+            code = ParentNode("code", html_nodes)
+            return ParentNode("pre", [code])
+            
+        case BlockType.QUOTE:
+            lines = block.split("\n")
+            quote = " ".join(list(map(lambda line: re.findall(r"^(>) (.*)", line)[0][1], lines)))
+            text_nodes = text_to_textnodes(quote)
+            html_nodes = list(map(text_node_to_html_node, text_nodes))
+            return ParentNode("blockquote", html_nodes)
+            
+        case BlockType.ULIST:
+            lines = block.split("\n")
+            elems = map(lambda line: re.findall(r"^([-\*]) (.*)", line)[0][1], lines)
+            elem_textnode_list = map(text_to_textnodes, elems)
+            
+            ul_children = []
+            for li_textnode_list in elem_textnode_list:
+                li_html_node_list = list(map(text_node_to_html_node, li_textnode_list))
+                ul_children.append(ParentNode("li", li_html_node_list))
+            return ParentNode("ul", ul_children)
+            
+        case BlockType.OLIST:
+            lines = block.split("\n")
+            
+            elems = map(lambda line: re.findall(r"^(\d+)\. (.*)", line)[0][1], lines)
+            elem_textnode_list = map(text_to_textnodes, elems)
+            
+            ul_children = []
+            for li_textnode_list in elem_textnode_list:
+                li_html_node_list = list(map(text_node_to_html_node, li_textnode_list))
+                ul_children.append(ParentNode("li", li_html_node_list))
+            
+            return ParentNode("ol", ul_children)
+        case _:
+            raise ValueError("Invalid Block Type")
+
