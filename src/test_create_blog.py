@@ -1,5 +1,5 @@
 import unittest
-from create_template import extract_title
+from create_blog import extract_title
 
 class TestCreateTemplate(unittest.TestCase):
     def test_extract_title(self):
@@ -12,7 +12,7 @@ class TestCreateTemplate(unittest.TestCase):
         text = "No heading"
         with self.assertRaises(ValueError) as cm:
             extract_title(text)
-        self.assertEqual(cm.exception.args[0], "there is not title in the markdown")
+        self.assertEqual(cm.exception.args[0], "there is no title in the markdown")
 
     
 if __name__ == "__main__":

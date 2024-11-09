@@ -1,15 +1,16 @@
 import os
 import shutil
 import re
+from pathlib import Path
 
 from block_utils import markdown_to_html_node
 
-def delete_files(src = "public"):
+def delete_files(src : str = "public"):
     if os.path.exists(src):
         shutil.rmtree(src)
 
 
-def copy_files(src = "static", dest = "public"):
+def copy_files(src : str = "static", dest : str = "public"):
     if os.path.exists(src) == False:
         raise ValueError(f"source folder not found {src}")
     
@@ -21,14 +22,17 @@ def copy_files(src = "static", dest = "public"):
         else:
             next_dest = os.path.join(dest, path)
             copy_files(cur_path, next_dest)
-        
-def extract_title(markdown : str) -> str:
-    title = re.findall(r"^# (.*)$", markdown, re.MULTILINE)
 
-    if title == []:
-        raise ValueError("there is not title in the markdown")
+# Assumptions: 
+# there is no whitespace at the beginning of a line for the title
+# the first header is the title.       
+def extract_title(markdown : str) -> str:
+    match = re.search(r"^# (.*)$", markdown, re.MULTILINE)
+
+    if match == None:
+        raise ValueError("there is no title in the markdown")
     
-    return title[0].strip()
+    return match.group(1).strip()
 
 
 
@@ -45,13 +49,13 @@ def generate_page(from_path : str, template_path : str, dest_path : str):
 
 def add_content(template, content, title):
     
-    elem = re.findall(
+    elem = re.match(
         r"(.*)\{\{ Title \}\}(.*)\{\{ Content \}\}(.*)",
         template,
         re.DOTALL
     )
     
-    before_title, between, after_content = elem[0]
+    before_title, between, after_content = elem.groups()
     return "\n".join([before_title, title, between, content, after_content]) 
 
 def read_file(from_path : str) -> str:
@@ -66,4 +70,21 @@ def write_html(html, path):
         os.makedirs(dest_dir)
     with open(path, "w") as file:
         file.write(html)
+    
+# Crawl every entry in the content directory
+# For each markdown file found, generate a new .html file using the same template.html. 
+# The generated pages should be written to the public directory in the same directory structure.
+
+
+def generate_pages_recursive(dir_path_content : str, template_path : str, dest_dir_path : str):
+    for path in os.listdir(dir_path_content):
+        cur_path = os.path.join(dir_path_content, path)
+        dest_path = os.path.join(dest_dir_path, path)
+
+        if os.path.isfile(cur_path):
+            dest_path = Path(dest_path).with_suffix(".html")
+            generate_page(cur_path, template_path, dest_path)
+        else:
+            generate_pages_recursive(cur_path, template_path, dest_path)
+    
     

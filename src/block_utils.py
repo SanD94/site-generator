@@ -101,7 +101,7 @@ def _create_heading_html_node(block : str) -> ParentNode:
 
 
 def _create_code_html_node(block : str) -> ParentNode:
-    block = block[3:-3]
+    block = block[3:-3].strip() # code block without indicating language
     text_nodes = text_to_textnodes(block)
     html_nodes = list(map(text_node_to_html_node, text_nodes))
     code = ParentNode("code", html_nodes)
